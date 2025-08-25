@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: total_sales
+    description: "Total sales amount by customer"
+    columns:
+      - name: customer_id
+        description: "Unique identifier by customer"
+        tests:
+          - unique
+          - not_null
+          
+      - name: total_sales_amount
+        description: "Total amount by customer"
+        tests:
+          - not_null
+  
+  - name: monthly_orders
+    description: "Monthly orders"
+    columns:
+      - name: year
+        description: "Year"
+        tests:
+          - not_null
+          
+      - name: month
+        description: "Month"
+        tests:
+          - not_null
+          
+      - name: number_of_orders
+        description: "Count of orders"
+        tests:
+          - not_null
