@@ -1,0 +1,138 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Transactional data"
+    database: stori_prod
+    schema: raw
+    loader: airbyte
+    loaded_at_field: order_date
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+    
+    tables:
+      - name: orders
+        description: "order data"
+        columns:
+          - name: order_id
+            description: "Unique identifier by order"
+            tests:
+              - unique
+              - not_null
+
+          
+          - name: customer_id
+            description: "Unique identifier by customer"
+            tests:
+              - not_null
+          
+          - name: order_date
+            description: "Transaction date"
+            tests:
+              - not_null
+
+          
+          - name: amount
+            description: "Transaction amount"
+            tests:
+              - not_null
+
+
+models:
+  - name: total_sales
+    description: "Total sales by customer"
+    config:
+      materialized: incremental
+      unique_key: customer_id
+      incremental_strategy: merge
+      on_schema_change: append_new_columns
+      
+    columns:
+      - name: customer_id
+        description: "Unique identifier by customer"
+        tests:
+          - unique
+          - not_null
+
+          
+      - name: total_sales_amount
+        description: "Total Sales Amount by Customer"
+        tests:
+          - not_null
+
+          
+      - name: total_orders
+        description: "Total Orders by customer"
+        tests:
+          - not_null
+
+        
+
+  - name: monthly_orders
+    description: "Count of monthly orders"
+    config:
+      materialized: incremental
+      unique_key: order_month
+      incremental_strategy: merge
+      full_refresh: false
+      
+    columns:
+      - name: year
+        description: "Año de la orden"
+        tests:
+          - not_null
+
+      - name: month
+        description: "Mes de la orden (1-12)"
+        tests:
+          - not_null
+          
+      - name: order_count
+        description: "Cantidad total de órdenes en el mes"
+        tests:
+          - not_null
+
+
+  - name: incremental
+    description: "Incremental Loading"
+    config:
+      materialized: incremental
+      unique_key: order_month
+      incremental_strategy: merge
+      on_schema_change: append_new_columns
+      post-hook:
+        - "{{ log('Incremental load completed: ' ~ this ~ ' at ' ~ current_timestamp()) }}"
+        - "{{ audit_helper.compare_row_count(ref('orders_per_month'), this) }}"
+      
+    columns:
+      - name: order_month
+        description: "Month of Order"
+        tests:
+          - unique
+          - not_null
+          
+      - name: number_of_orders
+        description: "Count of orders"
+        tests:
+          - not_null
+          
+      - name: total_sales_amount
+        description: "Monthly sales amount"
+        tests:
+          - not_null
+
+          
+      - name: load_timestamp
+        description: "Last update timestamp"
+        tests:
+          - not_null
+
+
+tests:
+  - name: sales_validation
+    description: "Validation of missing values"
+    severity: warn
+    config:
+      tags: ['validation', 'sales']
+      store_failures: true
