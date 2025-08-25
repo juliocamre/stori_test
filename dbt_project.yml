@@ -79,17 +79,17 @@ models:
       
     columns:
       - name: year
-        description: "Año de la orden"
+        description: "YYYY"
         tests:
           - not_null
 
       - name: month
-        description: "Mes de la orden (1-12)"
+        description: "MM"
         tests:
           - not_null
           
       - name: order_count
-        description: "Cantidad total de órdenes en el mes"
+        description: "Order Count"
         tests:
           - not_null
 
